@@ -1,0 +1,18 @@
+{
+    "bay_length": 100,
+    "bay_width": 100,
+    "bay_height": 100,
+    "criteria": 60,
+    "Type": "请输入",
+    "SD_qty": 8,
+    "Sen": 0.5,
+    "FAR": 0.5,
+    "SD_len": 10,
+    "SD_width": 10,
+    "method": "居中布置",
+    "Gap1": 0,
+    "Gap2": 0,
+    "displace": 0,
+    "x_interval": 1,
+    "y_iterval": 1
+}
