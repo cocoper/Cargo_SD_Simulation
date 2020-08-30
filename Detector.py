@@ -66,7 +66,8 @@ class Detector(object):
         dis = self.__cal_distance(
             pos1=(self.x_pos, self.y_pos, self.z_pos), pos2=src_pos)
         self.dis = dis
-        self.alarm_time = self.pred.predict(dis/10)
+        pred_dis = np.array(dis).reshape(-1,1)
+        self.alarm_time = self.pred.predict(pred_dis)
 
     def __cal_distance(self, pos1, pos2):
 

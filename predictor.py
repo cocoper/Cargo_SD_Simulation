@@ -11,8 +11,10 @@ import myAUI
 from Detector import Detector
 from cargobay import CargoBay
 from Environment import Environment
+from multiprocessing import Process,Queue
 
 LOAD_DEF = True
+process_msg = '' #需传递给GUI的过程信息
 
 def load_model(model_file):  # load model
     with open(model_file, 'rb') as f:
@@ -46,11 +48,22 @@ def print_results(summary, data_path='test_result.csv'):
             len(df_res[df_res.Alarm == False])))
         print(df_res.to_string())
 
+def message_get(msg_queue):
+    while True:
+        msg = msg_queue.get(True)
+        print ('this msg is from main')
+        print (msg)
 
-def RunMain():
+    return msg
+
+def message_output(msg_queue):
+    msg_queue.put(process_msg)
+
+def RunMain(msg_queue):
     # 输入cargobay几何数据
     # 输入SD几何数据
     # 初始化仿真数据
+    # 初始化各种参数
 
     if LOAD_DEF:
         inputs = ReadInputs('default.json')  # load inputs
@@ -74,10 +87,10 @@ def RunMain():
     }
     move_interval = [inputs['x_interval'],inputs['y_interval']]
 
-    predictor = load_model(os.getcwd()+'\\rf_model_all.model')
+    SD_predictor = load_model(os.getcwd()+'\\rf_model_all_new.model')
     FWD_cargobay = CargoBay(
         width=bay_width, length=bay_length, height=bay_height)
-    dets = [Detector(predictor, (SD_width, SD_len), name='SD' +
+    dets = [Detector(SD_predictor, (SD_width, SD_len), name='SD' +
                      str(i+1), FalseAlarmRate=SD_FAR) for i in range(SD_qty)]
 
     Env1 = Environment(
@@ -89,9 +102,24 @@ def RunMain():
         move_interval=move_interval
     )
 
+#创建两个进程，一个用于运行预测器，一个读取预测器中每步输出的信息
+
+    msg_queue = Queue()
+
+    msg_put = Process(target= Env1.run,args=(msg_queue,'all',))
+    msg_get = Process(target=message_get,args=(msg_queue,))
+
+# 启动预测器
     Start_T = time()
-    Env1.run(mode='all')
+    # Env1.run(msg_pipe = msg_queue,mode='all')
+    msg_get.start()
+    msg_put.start()
+
+    msg_put.join()  #阻塞操作，一道队列所有的任务都处理
+
     End_T = time()
+
+    msg_get.terminate()
 
     runs_summary = {
         'Type': airplaneType,

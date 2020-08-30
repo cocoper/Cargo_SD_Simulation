@@ -2,6 +2,9 @@ import streamlit as st
 from PIL import Image
 import json
 import predictor
+from multiprocessing import Queue,Process
+
+process_message = ''  #一个全局变量，用来接收从主程序中传递出的信息字符串
 
 #定义所有需要输入的函数
 def number(title,mv,v,s):
@@ -20,9 +23,17 @@ def slider(title,min,max,v,s):
     Sen = st.sidebar.slider(title,min_value=min,max_value=max,value=v,step=s)
     return Sen
 
-def text(title,inpu):
-    setting = st.sidebar.text_input(title,inpu)
+def text(title,input):
+    setting = st.sidebar.text_input(title,input)
     return setting
+
+def get_msg_main(msg_queue): #读取主程序进程数据
+    while True:
+        process_message = msg_queue.get(True)
+        # print('this is from GUI')
+        process_message += 'this is from GUI\n'
+    
+
 
 #生成网页界面，调用输入函数
 st.title('货舱烟雾探测系统设计平台')
@@ -115,6 +126,18 @@ if st.sidebar.button('设置完成'):
     with open('test.json','w',encoding='utf-8') as f:
         f.write(json_string)
     
-    # predictor.RunMain()
 if st.button('开始预测'):
-    predictor.RunMain()
+
+#创建两个进程，一个用于运行预测器，一个读取预测器中每步输出的信息
+    msg_queue = Queue()
+    msg_put = Process(target=predictor.RunMain,args=(msg_queue,))
+    msg_get = Process(target=get_msg_main,args=(msg_queue,))
+    # predictor.RunMain()
+#启动后台主程序
+    msg_get.start()
+    msg_put.start()
+    msg_put.join() #处理队列中所有的数据
+    st.write(process_message)
+    msg_get.terminate()  #手动终止读取进程，结束程序
+
+

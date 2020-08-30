@@ -2,6 +2,7 @@
 from Detector import Detector
 import csv
 import pandas as pd
+from multiprocessing import Process,Queue
 
 
 class Environment(object):
@@ -42,6 +43,7 @@ class Environment(object):
                      fwd_gap=self.sys_arrange['fwd_gap'],
                      aft_gap=self.sys_arrange['aft_gap'],
                      displace=self.sys_arrange['displace'])
+        self.process_message = ''
 
     def add_detector(self, detector):
         if detector.__class__.__name__ == "Detector":
@@ -154,7 +156,7 @@ class Environment(object):
 
         return x_group, y_group
 
-    def run(self, mode='singal'):
+    def run(self, msg_pipe, mode='singal'):
         if mode == 'singal':
             for sd in self.detectors:
                 sd.alarm(self.smoke_src_pos)
@@ -186,7 +188,8 @@ class Environment(object):
                     for sd in self.detectors:
                         sd.alarm(self.smoke_src_pos)  # 得到每个烟雾探测器的告警时间并存入对象内
                         self.log[sd.name] = sd.alarm_time[0]
-                    self.output()
+                    self.process_message = self.output()  #读取每次运行结果并保存
+                    msg_pipe.put(self.process_message)  # 通过进程队列传递信息
                     alarm_res = self.det_logic(
                         self.CHA_SD, self.CHB_SD, mode='AND')
                     self.log['Alarm'] = alarm_res
@@ -253,9 +256,14 @@ class Environment(object):
         return alarm_bin
 
     def output(self):
+        message = ''
         for sd in self.detectors:
-            print('The No.{:d} CH{:d} Smoke Detecotor is at {:.2f},{:.2f},{:.2f}, distance is {:.2f} alarm time is {:f}'
-                  .format(sd.SD_id, sd.channel_id, sd.x_pos, sd.y_pos, sd.z_pos, sd.dis, sd.alarm_time[0]))
+            # print('The No.{:d} CH{:d} Smoke Detector is at {:.2f},{:.2f},{:.2f}, distance is {:.2f} alarm time is {:f}'
+            #       .format(sd.SD_id, sd.channel_id, sd.x_pos, sd.y_pos, sd.z_pos, sd.dis, sd.alarm_time[0]))
+            msg_str = 'The No.{:d} CH{:d} Smoke Detectors is at {:.2f},{:.2f},{:.2f}, distance is {:.2f} alarm time is {:f}\n'.format(sd.SD_id, sd.channel_id, sd.x_pos, sd.y_pos, sd.z_pos, sd.dis, sd.alarm_time[0])
+            message += msg_str
+        return message
+        # df_res = 
         # self.alarm2binary(self.crit,self.CHA_SD)
         # self.alarm2binary(self.crit,self.CHB_SD)
         # print(self.det_logic(self.CHA_SD,self.CHB_SD))
