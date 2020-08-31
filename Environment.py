@@ -157,6 +157,7 @@ class Environment(object):
         return x_group, y_group
 
     def run(self, msg_pipe, mode='singal'):
+    # def run(self,mode='singal'):
         if mode == 'singal':
             for sd in self.detectors:
                 sd.alarm(self.smoke_src_pos)
@@ -195,7 +196,7 @@ class Environment(object):
                     self.log['Alarm'] = alarm_res
                     if not alarm_res:
                         failed_test.append(test_num)
-                    print(self.log)
+                    # print(self.log)
                     # self.write_test_log(test_res,logfile)
                     logger.writerow(self.log)
 

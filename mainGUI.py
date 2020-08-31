@@ -4,7 +4,7 @@ import json
 import predictor
 from multiprocessing import Queue,Process
 
-process_message = ''  #一个全局变量，用来接收从主程序中传递出的信息字符串
+process_message = 'abcd'  #一个全局变量，用来接收从主程序中传递出的信息字符串
 
 #定义所有需要输入的函数
 def number(title,mv,v,s):
@@ -28,19 +28,22 @@ def text(title,input):
     return setting
 
 def get_msg_main(msg_queue): #读取主程序进程数据
+    global process_message
+    # st.write('abdcd')
     while True:
         process_message = msg_queue.get(True)
         # print('this is from GUI')
         process_message += 'this is from GUI\n'
+        print(process_message)
     
 
 
 #生成网页界面，调用输入函数
 st.title('货舱烟雾探测系统设计平台')
-show_fig = Image.open('1.1.png')
-if show_fig.mode == "P":
-    show_fig = show_fig.convert('RGB')
-st.image(show_fig, width=530)
+# show_fig = Image.open('1.1.png')
+# if show_fig.mode == "P":
+#     show_fig = show_fig.convert('RGB')
+# st.image(show_fig, width=530)
 st.sidebar.title('参数设置')
 st.sidebar.header('1.设置货舱尺寸')
 if st.sidebar.button('货舱尺寸示意图'):
@@ -126,7 +129,8 @@ if st.sidebar.button('设置完成'):
     with open('test.json','w',encoding='utf-8') as f:
         f.write(json_string)
     
-if st.button('开始预测'):
+if st.sidebar.button('开始预测'):
+    st.write(process_message)
 
 #创建两个进程，一个用于运行预测器，一个读取预测器中每步输出的信息
     msg_queue = Queue()
@@ -134,10 +138,9 @@ if st.button('开始预测'):
     msg_get = Process(target=get_msg_main,args=(msg_queue,))
     # predictor.RunMain()
 #启动后台主程序
-    msg_get.start()
     msg_put.start()
+    msg_get.start()
     msg_put.join() #处理队列中所有的数据
-    st.write(process_message)
     msg_get.terminate()  #手动终止读取进程，结束程序
 
 

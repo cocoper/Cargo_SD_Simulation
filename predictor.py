@@ -49,17 +49,18 @@ def print_results(summary, data_path='test_result.csv'):
         print(df_res.to_string())
 
 def message_get(msg_queue):
+    global process_msg
     while True:
-        msg = msg_queue.get(True)
-        print ('this msg is from main')
-        print (msg)
+        process_msg = msg_queue.get(True)
+        # print ('this msg is from main')
+        print('internal'+ process_msg)
 
-    return msg
+    # return msg
 
-def message_output(msg_queue):
-    msg_queue.put(process_msg)
+# def message_output(msg_queue):
+#     msg_queue.put(process_msg)
 
-def RunMain(msg_queue):
+def RunMain(msg_pipe):
     # 输入cargobay几何数据
     # 输入SD几何数据
     # 初始化仿真数据
@@ -104,22 +105,27 @@ def RunMain(msg_queue):
 
 #创建两个进程，一个用于运行预测器，一个读取预测器中每步输出的信息
 
-    msg_queue = Queue()
+    # msg_queue = Queue() #Env->main 传输数据
 
-    msg_put = Process(target= Env1.run,args=(msg_queue,'all',))
-    msg_get = Process(target=message_get,args=(msg_queue,))
+    # msg_put = Process(target= Env1.run,args=(msg_queue,'all',))
+    # msg_get = Process(target=message_get,args=(msg_queue,))
 
 # 启动预测器
     Start_T = time()
-    # Env1.run(msg_pipe = msg_queue,mode='all')
-    msg_get.start()
-    msg_put.start()
+    Env1.run(msg_pipe = msg_pipe,mode='all')
+    # Env1.run(mode='all')
+    # msg_put.start()
+    # msg_get.start()
 
-    msg_put.join()  #阻塞操作，一道队列所有的任务都处理
+    print('external++++++++++++++++++++\n')
+    # print(process_msg)
+    # msg_put.join()  #阻塞操作，一道队列所有的任务都处理
+    msg_pipe.put(Env1.process_message) #向GUI传输数据，main->GUI
+#------------------------------------------
 
     End_T = time()
 
-    msg_get.terminate()
+    # msg_get.terminate()
 
     runs_summary = {
         'Type': airplaneType,
